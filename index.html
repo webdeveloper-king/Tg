@@ -1,882 +1,224 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact Manager - Telegram Mini App</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Telegram Contact Manager</title>
 
-        :root {
-            --tg-theme-bg-color: #ffffff;
-            --tg-theme-text-color: #000000;
-            --tg-theme-hint-color: #999999;
-            --tg-theme-link-color: #2481cc;
-            --tg-theme-button-color: #40a7e3;
-            --tg-theme-button-text-color: #ffffff;
-            --tg-theme-secondary-bg-color: #f4f4f5;
-        }
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-            line-height: 1.4;
-            transition: background 0.3s, color 0.3s;
-        }
+<!-- Telegram SDK -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-        .container {
-            max-width: 100%;
-            padding: 16px;
-            padding-bottom: 80px;
-        }
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-        /* Header */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            margin-bottom: 20px;
-            border-bottom: 1px solid var(--tg-theme-secondary-bg-color);
-        }
-
-        .header h1 {
-            font-size: 24px;
-            font-weight: 700;
-        }
-
-        .stats {
-            background: var(--tg-theme-secondary-bg-color);
-            padding: 12px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .stat-item {
-            text-align: center;
-            flex: 1;
-        }
-
-        .stat-number {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--tg-theme-button-color);
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: var(--tg-theme-hint-color);
-            margin-top: 4px;
-        }
-
-        /* Search Bar */
-        .search-container {
-            margin-bottom: 20px;
-            position: relative;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 14px 16px;
-            padding-left: 44px;
-            border-radius: 12px;
-            border: 1px solid var(--tg-theme-secondary-bg-color);
-            background: var(--tg-theme-secondary-bg-color);
-            font-size: 16px;
-            color: var(--tg-theme-text-color);
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--tg-theme-hint-color);
-        }
-
-        /* Contact List */
-        .contact-list {
-            margin-bottom: 20px;
-        }
-
-        .contact-item {
-            display: flex;
-            align-items: center;
-            padding: 16px;
-            background: var(--tg-theme-secondary-bg-color);
-            border-radius: 12px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .contact-item:hover {
-            transform: translateY(-2px);
-        }
-
-        .contact-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 18px;
-            margin-right: 16px;
-        }
-
-        .contact-info {
-            flex: 1;
-        }
-
-        .contact-name {
-            font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 4px;
-        }
-
-        .contact-phone {
-            font-size: 14px;
-            color: var(--tg-theme-hint-color);
-        }
-
-        .contact-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .action-btn {
-            background: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
-            border: none;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-        }
-
-        /* Contact Detail Modal */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 20px;
-        }
-
-        .modal {
-            background: var(--tg-theme-bg-color);
-            border-radius: 20px;
-            width: 100%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow-y: auto;
-            animation: slideUp 0.3s ease;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .modal-header {
-            padding: 20px;
-            border-bottom: 1px solid var(--tg-theme-secondary-bg-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-body {
-            padding: 20px;
-        }
-
-        .detail-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 32px;
-            margin: 0 auto 20px;
-        }
-
-        .detail-info {
-            margin-bottom: 20px;
-        }
-
-        .detail-item {
-            margin-bottom: 16px;
-        }
-
-        .detail-label {
-            font-size: 12px;
-            color: var(--tg-theme-hint-color);
-            margin-bottom: 4px;
-        }
-
-        .detail-value {
-            font-size: 16px;
-            font-weight: 500;
-        }
-
-        /* Floating Action Button */
-        .fab-container {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 100;
-        }
-
-        .fab {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .fab:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Import Contact Button */
-        .import-btn {
-            width: 100%;
-            padding: 16px;
-            background: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            cursor: pointer;
-            margin-bottom: 20px;
-            transition: opacity 0.2s;
-        }
-
-        .import-btn:hover {
-            opacity: 0.9;
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--tg-theme-hint-color);
-        }
-
-        .empty-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-            opacity: 0.5;
-        }
-
-        /* Loading */
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 40px;
-            color: var(--tg-theme-hint-color);
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid var(--tg-theme-secondary-bg-color);
-            border-top-color: var(--tg-theme-button-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* Responsive */
-        @media (max-width: 480px) {
-            .container {
-                padding: 12px;
-                padding-bottom: 80px;
-            }
-            
-            .header h1 {
-                font-size: 20px;
-            }
-        }
-    </style>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+font-family:system-ui,-apple-system,Segoe UI,Roboto;
+background:#fff;color:#000;
+}
+.container{padding:16px;padding-bottom:90px}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.header h1{font-size:22px}
+.stats{display:flex;gap:8px;margin-bottom:16px}
+.stat{flex:1;background:#f2f2f2;padding:10px;border-radius:10px;text-align:center}
+.stat b{font-size:20px;color:#40a7e3}
+.search{margin-bottom:14px}
+.search input{width:100%;padding:12px;border-radius:10px;border:none;background:#f2f2f2}
+.contact{display:flex;align-items:center;background:#f2f2f2;padding:12px;border-radius:12px;margin-bottom:8px}
+.avatar{
+width:42px;height:42px;border-radius:50%;
+background:#667eea;color:#fff;
+display:flex;align-items:center;justify-content:center;
+font-weight:bold;margin-right:12px
+}
+.info{flex:1}
+.name{font-weight:600}
+.phone{font-size:13px;color:#666}
+.actions button{
+border:none;background:#40a7e3;color:#fff;
+width:34px;height:34px;border-radius:50%;margin-left:6px
+}
+.fab{
+position:fixed;bottom:20px;right:20px;
+width:56px;height:56px;border-radius:50%;
+border:none;background:#40a7e3;color:#fff;
+font-size:22px
+}
+.empty{text-align:center;color:#888;margin-top:40px}
+</style>
 </head>
+
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>📱 Contact Manager</h1>
-            <div class="theme-toggle" onclick="toggleTheme()">
-                <i class="fas fa-moon"></i>
-            </div>
-        </div>
+<div class="container">
 
-        <!-- Stats -->
-        <div class="stats">
-            <div class="stat-item">
-                <div class="stat-number" id="total-contacts">0</div>
-                <div class="stat-label">Total</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number" id="tg-contacts">0</div>
-                <div class="stat-label">From Telegram</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number" id="device-contacts">0</div>
-                <div class="stat-label">From Device</div>
-            </div>
-        </div>
+<div class="header">
+<h1>📱 Contacts</h1>
+</div>
 
-        <!-- Import Button -->
-        <button class="import-btn" onclick="importFromTelegram()">
-            <i class="fab fa-telegram"></i>
-            Import from Telegram
+<div class="stats">
+<div class="stat"><b id="total">0</b><div>Total</div></div>
+<div class="stat"><b id="tg">0</b><div>Telegram</div></div>
+<div class="stat"><b id="device">0</b><div>Device</div></div>
+</div>
+
+<div class="search">
+<input type="text" placeholder="Search..." oninput="search(this.value)">
+</div>
+
+<div id="list"></div>
+
+<div id="empty" class="empty">No contacts yet</div>
+
+</div>
+
+<button class="fab" onclick="addMenu()">
+<i class="fas fa-plus"></i>
+</button>
+
+<script>
+/* ---------- TELEGRAM ---------- */
+const tg = window.Telegram.WebApp;
+tg.expand();
+
+/* ---------- FIREBASE CONFIG (REPLACE) ---------- */
+const firebaseConfig = {
+    apiKey: "AIzaSyC83RcG2YmBxqmsEFAS-WNNp4wN7BxwRcE",
+    authDomain: "workpro-d83ee.firebaseapp.com",
+    projectId: "workpro-d83ee",
+    storageBucket: "workpro-d83ee.firebasestorage.app",
+    messagingSenderId: "1308563532",
+    appId: "1:1308563532:web:433c0997a96430e7347ce9"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* ---------- DEVICE ID ---------- */
+let DEVICE_ID = localStorage.getItem("device_id");
+if(!DEVICE_ID){
+  DEVICE_ID = crypto.randomUUID();
+  localStorage.setItem("device_id", DEVICE_ID);
+}
+
+/* ---------- DATA ---------- */
+const REF = db.ref("contacts/" + DEVICE_ID);
+let contacts = [];
+let filtered = [];
+
+/* ---------- LOAD ---------- */
+REF.on("value", snap=>{
+  const val = snap.val() || {};
+  contacts = Object.keys(val).map(id=>({id,...val[id]}));
+  filtered = [...contacts];
+  render();
+  stats();
+});
+
+/* ---------- ADD ---------- */
+function addContact(c){
+  const id = REF.push().key;
+  REF.child(id).set(c);
+}
+
+/* ---------- DELETE ---------- */
+function del(id){
+  tg.showPopup({
+    title:"Delete",
+    message:"Delete contact?",
+    buttons:[
+      {id:"yes",type:"destructive",text:"Delete"},
+      {id:"no",type:"cancel",text:"Cancel"}
+    ]
+  },b=>{
+    if(b==="yes") REF.child(id).remove();
+  });
+}
+
+/* ---------- RENDER ---------- */
+function render(){
+  const list=document.getElementById("list");
+  list.innerHTML="";
+  filtered.forEach(c=>{
+    const el=document.createElement("div");
+    el.className="contact";
+    el.innerHTML=`
+      <div class="avatar">${(c.firstName||"?")[0]}</div>
+      <div class="info">
+        <div class="name">${c.firstName} ${c.lastName||""}</div>
+        <div class="phone">${c.phone||"No phone"}</div>
+      </div>
+      <div class="actions">
+        <button onclick="del('${c.id}')">
+          <i class="fas fa-trash"></i>
         </button>
+      </div>
+    `;
+    list.appendChild(el);
+  });
+  document.getElementById("empty").style.display =
+    filtered.length? "none":"block";
+}
 
-        <!-- Search -->
-        <div class="search-container">
-            <i class="fas fa-search search-icon"></i>
-            <input 
-                type="text" 
-                class="search-input" 
-                placeholder="Search contacts..." 
-                oninput="searchContacts(this.value)"
-            >
-        </div>
+/* ---------- STATS ---------- */
+function stats(){
+  total.innerText = contacts.length;
+  tg.innerText = contacts.filter(c=>c.source==="telegram").length;
+  device.innerText = contacts.filter(c=>c.source==="device").length;
+}
 
-        <!-- Contact List -->
-        <div class="contact-list" id="contact-list">
-            <!-- Contacts will be loaded here -->
-        </div>
+/* ---------- SEARCH ---------- */
+function search(q){
+  q=q.toLowerCase();
+  filtered=contacts.filter(c=>
+    (c.firstName+c.lastName+c.phone).toLowerCase().includes(q)
+  );
+  render();
+}
 
-        <!-- Empty State -->
-        <div class="empty-state" id="empty-state">
-            <div class="empty-icon">
-                <i class="fas fa-address-book"></i>
-            </div>
-            <h3>No contacts yet</h3>
-            <p>Import contacts from Telegram or add them manually</p>
-        </div>
+/* ---------- ADD MENU ---------- */
+function addMenu(){
+  tg.showPopup({
+    title:"Add Contact",
+    message:"Choose option",
+    buttons:[
+      {id:"tg",text:"Import Telegram"},
+      {id:"manual",text:"Add Manual"},
+      {id:"c",type:"cancel"}
+    ]
+  },b=>{
+    if(b==="tg") importTG();
+    if(b==="manual") manual();
+  });
+}
 
-        <!-- Loading -->
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <p>Loading contacts...</p>
-        </div>
-    </div>
+/* ---------- TELEGRAM CONTACT ---------- */
+function importTG(){
+  tg.requestContact(d=>{
+    if(!d) return;
+    addContact({
+      firstName:d.first_name,
+      lastName:d.last_name||"",
+      phone:d.phone_number||"",
+      source:"telegram",
+      created:Date.now()
+    });
+  });
+}
 
-    <!-- Contact Detail Modal -->
-    <div class="modal-overlay" id="contact-modal" onclick="closeModal(event)">
-        <div class="modal">
-            <div class="modal-header">
-                <h2>Contact Details</h2>
-                <button class="action-btn" onclick="closeModal(event)">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body" id="modal-body">
-                <!-- Contact details will be loaded here -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Floating Action Button -->
-    <div class="fab-container">
-        <button class="fab" onclick="showAddContactForm()">
-            <i class="fas fa-plus"></i>
-        </button>
-    </div>
-
-    <script>
-        // Initialize Telegram WebApp
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.enableClosingConfirmation();
-        
-        // Apply Telegram theme
-        document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#ffffff');
-        document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#000000');
-        document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint_color || '#999999');
-        document.documentElement.style.setProperty('--tg-theme-link-color', tg.themeParams.link_color || '#2481cc');
-        document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#40a7e3');
-        document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
-        document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color || '#f4f4f5');
-
-        // Contact storage
-        let contacts = JSON.parse(localStorage.getItem('telegram_contacts') || '[]');
-        let filteredContacts = [...contacts];
-
-        // Initialize app
-        document.addEventListener('DOMContentLoaded', function() {
-            updateStats();
-            renderContacts();
-            checkEmptyState();
-            
-            // Check if we have initData with contact info
-            if (tg.initDataUnsafe) {
-                processInitData();
-            }
-        });
-
-        // Process Telegram initData
-        function processInitData() {
-            const initData = tg.initDataUnsafe;
-            
-            // Check if user shared contact
-            if (initData.user && !contactExists(initData.user.id)) {
-                const contact = {
-                    id: Date.now(),
-                    source: 'telegram',
-                    userId: initData.user.id,
-                    firstName: initData.user.first_name,
-                    lastName: initData.user.last_name || '',
-                    phone: '', // Telegram doesn't share phone number directly
-                    username: initData.user.username || '',
-                    photoUrl: initData.user.photo_url || '',
-                    dateAdded: new Date().toISOString()
-                };
-                
-                addContact(contact);
-            }
-        }
-
-        // Import contacts from Telegram
-        function importFromTelegram() {
-            tg.showPopup({
-                title: 'Import Contact',
-                message: 'Select a contact to import from Telegram',
-                buttons: [
-                    {id: 'share', type: 'default', text: 'Share Contact'},
-                    {id: 'cancel', type: 'cancel', text: 'Cancel'}
-                ]
-            }, function(buttonId) {
-                if (buttonId === 'share') {
-                    // Request contact from user
-                    tg.requestContact(function(contactData) {
-                        if (contactData) {
-                            const newContact = {
-                                id: Date.now(),
-                                source: 'telegram',
-                                userId: contactData.id,
-                                firstName: contactData.first_name,
-                                lastName: contactData.last_name || '',
-                                phone: contactData.phone_number || '',
-                                username: contactData.username || '',
-                                photoUrl: '',
-                                dateAdded: new Date().toISOString()
-                            };
-                            
-                            addContact(newContact);
-                            
-                            tg.showAlert(`Contact ${contactData.first_name} imported successfully!`);
-                        }
-                    });
-                }
-            });
-        }
-
-        // Add a new contact
-        function addContact(contact) {
-            contacts.unshift(contact);
-            saveContacts();
-            renderContacts();
-            updateStats();
-            checkEmptyState();
-        }
-
-        // Check if contact exists
-        function contactExists(userId) {
-            return contacts.some(contact => contact.userId === userId);
-        }
-
-        // Save contacts to localStorage
-        function saveContacts() {
-            localStorage.setItem('telegram_contacts', JSON.stringify(contacts));
-        }
-
-        // Render contacts list
-        function renderContacts() {
-            const contactList = document.getElementById('contact-list');
-            contactList.innerHTML = '';
-            
-            filteredContacts.forEach(contact => {
-                const contactElement = document.createElement('div');
-                contactElement.className = 'contact-item';
-                contactElement.onclick = () => showContactDetails(contact);
-                
-                const initials = getInitials(contact.firstName, contact.lastName);
-                const sourceIcon = contact.source === 'telegram' ? 'fab fa-telegram' : 'fas fa-mobile-alt';
-                
-                contactElement.innerHTML = `
-                    <div class="contact-avatar">${initials}</div>
-                    <div class="contact-info">
-                        <div class="contact-name">${contact.firstName} ${contact.lastName}</div>
-                        <div class="contact-phone">
-                            <i class="${sourceIcon}" style="margin-right: 6px;"></i>
-                            ${contact.phone || 'No phone'}
-                        </div>
-                    </div>
-                    <div class="contact-actions">
-                        <button class="action-btn" onclick="event.stopPropagation(); shareContact(${contact.id})">
-                            <i class="fas fa-share-alt"></i>
-                        </button>
-                        <button class="action-btn" onclick="event.stopPropagation(); deleteContact(${contact.id})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                `;
-                
-                contactList.appendChild(contactElement);
-            });
-        }
-
-        // Get initials for avatar
-        function getInitials(firstName, lastName) {
-            const first = firstName ? firstName[0].toUpperCase() : '';
-            const last = lastName ? lastName[0].toUpperCase() : '';
-            return first + last;
-        }
-
-        // Show contact details modal
-        function showContactDetails(contact) {
-            const modal = document.getElementById('contact-modal');
-            const modalBody = document.getElementById('modal-body');
-            
-            const sourceIcon = contact.source === 'telegram' ? 'fab fa-telegram' : 'fas fa-mobile-alt';
-            const initials = getInitials(contact.firstName, contact.lastName);
-            
-            modalBody.innerHTML = `
-                <div class="detail-avatar">${initials}</div>
-                <div class="detail-info">
-                    <div class="detail-item">
-                        <div class="detail-label">Full Name</div>
-                        <div class="detail-value">${contact.firstName} ${contact.lastName}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Phone Number</div>
-                        <div class="detail-value">${contact.phone || 'Not available'}</div>
-                    </div>
-                    ${contact.username ? `
-                    <div class="detail-item">
-                        <div class="detail-label">Telegram Username</div>
-                        <div class="detail-value">@${contact.username}</div>
-                    </div>` : ''}
-                    <div class="detail-item">
-                        <div class="detail-label">Source</div>
-                        <div class="detail-value">
-                            <i class="${sourceIcon}" style="margin-right: 8px;"></i>
-                            ${contact.source === 'telegram' ? 'Telegram' : 'Device'}
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Added On</div>
-                        <div class="detail-value">${new Date(contact.dateAdded).toLocaleDateString()}</div>
-                    </div>
-                </div>
-                <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button class="import-btn" onclick="callContact('${contact.phone}')" style="flex: 1;">
-                        <i class="fas fa-phone"></i> Call
-                    </button>
-                    <button class="import-btn" onclick="messageContact(${contact.userId || contact.id})" style="flex: 1;">
-                        <i class="fas fa-comment"></i> Message
-                    </button>
-                </div>
-            `;
-            
-            modal.style.display = 'flex';
-        }
-
-        // Close modal
-        function closeModal(event) {
-            if (event.target.classList.contains('modal-overlay') || 
-                event.target.closest('.action-btn')) {
-                document.getElementById('contact-modal').style.display = 'none';
-            }
-        }
-
-        // Search contacts
-        function searchContacts(query) {
-            if (!query.trim()) {
-                filteredContacts = [...contacts];
-            } else {
-                const searchTerm = query.toLowerCase();
-                filteredContacts = contacts.filter(contact => 
-                    contact.firstName.toLowerCase().includes(searchTerm) ||
-                    contact.lastName.toLowerCase().includes(searchTerm) ||
-                    (contact.phone && contact.phone.includes(searchTerm)) ||
-                    (contact.username && contact.username.toLowerCase().includes(searchTerm))
-                );
-            }
-            renderContacts();
-            checkEmptyState();
-        }
-
-        // Delete contact
-        function deleteContact(contactId) {
-            tg.showPopup({
-                title: 'Delete Contact',
-                message: 'Are you sure you want to delete this contact?',
-                buttons: [
-                    {id: 'delete', type: 'destructive', text: 'Delete'},
-                    {id: 'cancel', type: 'cancel', text: 'Cancel'}
-                ]
-            }, function(buttonId) {
-                if (buttonId === 'delete') {
-                    contacts = contacts.filter(c => c.id !== contactId);
-                    filteredContacts = filteredContacts.filter(c => c.id !== contactId);
-                    saveContacts();
-                    renderContacts();
-                    updateStats();
-                    checkEmptyState();
-                    
-                    tg.showAlert('Contact deleted successfully');
-                }
-            });
-        }
-
-        // Share contact
-        function shareContact(contactId) {
-            const contact = contacts.find(c => c.id === contactId);
-            if (contact) {
-                const shareText = `Contact: ${contact.firstName} ${contact.lastName}\nPhone: ${contact.phone || 'Not available'}`;
-                
-                // In a real app, you would use Telegram's sharing capabilities
-                tg.showAlert(`Sharing contact: ${contact.firstName} ${contact.lastName}`);
-                
-                // Copy to clipboard
-                navigator.clipboard.writeText(shareText).then(() => {
-                    tg.showAlert('Contact copied to clipboard!');
-                });
-            }
-        }
-
-        // Call contact
-        function callContact(phoneNumber) {
-            if (phoneNumber) {
-                tg.showPopup({
-                    title: 'Call Contact',
-                    message: `Call ${phoneNumber}?`,
-                    buttons: [
-                        {id: 'call', type: 'default', text: 'Call'},
-                        {id: 'cancel', type: 'cancel', text: 'Cancel'}
-                    ]
-                }, function(buttonId) {
-                    if (buttonId === 'call') {
-                        // In a real app, this would initiate a call
-                        tg.showAlert(`Calling ${phoneNumber}...`);
-                    }
-                });
-            } else {
-                tg.showAlert('Phone number not available');
-            }
-        }
-
-        // Message contact
-        function messageContact(userId) {
-            tg.showPopup({
-                title: 'Send Message',
-                message: 'Send a message to this contact?',
-                buttons: [
-                    {id: 'message', type: 'default', text: 'Message'},
-                    {id: 'cancel', type: 'cancel', text: 'Cancel'}
-                ]
-            }, function(buttonId) {
-                if (buttonId === 'message') {
-                    // In a real app, this would open Telegram chat
-                    tg.openTelegramLink(`https://t.me/${userId}`);
-                }
-            });
-        }
-
-        // Update statistics
-        function updateStats() {
-            const total = contacts.length;
-            const tgCount = contacts.filter(c => c.source === 'telegram').length;
-            const deviceCount = contacts.filter(c => c.source === 'device').length;
-            
-            document.getElementById('total-contacts').textContent = total;
-            document.getElementById('tg-contacts').textContent = tgCount;
-            document.getElementById('device-contacts').textContent = deviceCount;
-        }
-
-        // Check and show empty state
-        function checkEmptyState() {
-            const emptyState = document.getElementById('empty-state');
-            const contactList = document.getElementById('contact-list');
-            
-            if (filteredContacts.length === 0) {
-                emptyState.style.display = 'block';
-                contactList.style.display = 'none';
-            } else {
-                emptyState.style.display = 'none';
-                contactList.style.display = 'block';
-            }
-        }
-
-        // Show add contact form
-        function showAddContactForm() {
-            tg.showPopup({
-                title: 'Add New Contact',
-                message: 'Enter contact details:',
-                buttons: [
-                    {id: 'manual', type: 'default', text: 'Add Manually'},
-                    {id: 'import', type: 'default', text: 'Import from Telegram'},
-                    {id: 'cancel', type: 'cancel', text: 'Cancel'}
-                ]
-            }, function(buttonId) {
-                if (buttonId === 'manual') {
-                    addManualContact();
-                } else if (buttonId === 'import') {
-                    importFromTelegram();
-                }
-            });
-        }
-
-        // Add contact manually
-        function addManualContact() {
-            tg.showPopup({
-                title: 'Add Contact',
-                message: 'Enter the contact information',
-                buttons: [
-                    {id: 'add', type: 'default', text: 'Add'},
-                    {id: 'cancel', type: 'cancel', text: 'Cancel'}
-                ]
-            }, function(buttonId) {
-                if (buttonId === 'add') {
-                    // For demo purposes, create a sample contact
-                    const newContact = {
-                        id: Date.now(),
-                        source: 'device',
-                        userId: null,
-                        firstName: 'John',
-                        lastName: 'Doe',
-                        phone: '+1234567890',
-                        username: '',
-                        photoUrl: '',
-                        dateAdded: new Date().toISOString()
-                    };
-                    
-                    addContact(newContact);
-                    tg.showAlert('Contact added successfully!');
-                }
-            });
-        }
-
-        // Toggle theme (for demo purposes)
-        function toggleTheme() {
-            const currentBg = getComputedStyle(document.documentElement)
-                .getPropertyValue('--tg-theme-bg-color').trim();
-            
-            if (currentBg === '#ffffff' || currentBg === 'rgb(255, 255, 255)') {
-                // Switch to dark theme
-                document.documentElement.style.setProperty('--tg-theme-bg-color', '#1a1a1a');
-                document.documentElement.style.setProperty('--tg-theme-text-color', '#ffffff');
-                document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', '#2d2d2d');
-            } else {
-                // Switch to light theme
-                document.documentElement.style.setProperty('--tg-theme-bg-color', '#ffffff');
-                document.documentElement.style.setProperty('--tg-theme-text-color', '#000000');
-                document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', '#f4f4f5');
-            }
-        }
-
-        // Add some sample data for demo
-        if (contacts.length === 0) {
-            const sampleContacts = [
-                {
-                    id: 1,
-                    source: 'telegram',
-                    userId: 123456789,
-                    firstName: 'Alex',
-                    lastName: 'Johnson',
-                    phone: '+1234567890',
-                    username: 'alexj',
-                    photoUrl: '',
-                    dateAdded: new Date().toISOString()
-                },
-                {
-                    id: 2,
-                    source: 'device',
-                    userId: null,
-                    firstName: 'Maria',
-                    lastName: 'Garcia',
-                    phone: '+0987654321',
-                    username: '',
-                    photoUrl: '',
-                    dateAdded: new Date().toISOString()
-                },
-                {
-                    id: 3,
-                    source: 'telegram',
-                    userId: 987654321,
-                    firstName: 'Sam',
-                    lastName: 'Wilson',
-                    phone: '+1122334455',
-                    username: 'samwilson',
-                    photoUrl: '',
-                    dateAdded: new Date().toISOString()
-                }
-            ];
-            
-            contacts = sampleContacts;
-            filteredContacts = [...contacts];
-            saveContacts();
-            renderContacts();
-            updateStats();
-            checkEmptyState();
-        }
-    </script>
+/* ---------- MANUAL ---------- */
+function manual(){
+  addContact({
+    firstName:"John",
+    lastName:"Doe",
+    phone:"+123456789",
+    source:"device",
+    created:Date.now()
+  });
+}
+</script>
 </body>
 </html>
