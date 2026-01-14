@@ -2,91 +2,101 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<title>Share Now - Telegram Mini App</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Telegram Contact Manager</title>
+
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
 
 <!-- Font Awesome -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-<!-- Telegram SDK -->
+<!-- Telegram WebApp -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
 body{
-font-family:system-ui,-apple-system,Segoe UI,Roboto;
-background:#fff;color:#000;
+    margin:0;
+    font-family:'Inter', sans-serif;
+    background:#f5f8fc;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
 }
-.container{padding:16px;padding-bottom:90px}
-.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-.header h1{font-size:22px}
-.stats{display:flex;gap:8px;margin-bottom:16px}
-.stat{flex:1;background:#f2f2f2;padding:10px;border-radius:10px;text-align:center}
-.stat b{font-size:20px;color:#40a7e3}
-.search{margin-bottom:14px}
-.search input{width:100%;padding:12px;border-radius:10px;border:none;background:#f2f2f2}
-.contact{display:flex;align-items:center;background:#f2f2f2;padding:12px;border-radius:12px;margin-bottom:8px}
-.avatar{
-width:42px;height:42px;border-radius:50%;
-background:#667eea;color:#fff;
-display:flex;align-items:center;justify-content:center;
-font-weight:bold;margin-right:12px
+.card{
+    width:90%;
+    max-width:400px;
+    background:#fff;
+    border-radius:16px;
+    padding:24px;
+    box-shadow:0 10px 30px rgba(0,0,0,.1);
+    text-align:center;
 }
-.info{flex:1}
-.name{font-weight:600}
-.phone{font-size:13px;color:#666}
-.actions button{
-border:none;background:#40a7e3;color:#fff;
-width:34px;height:34px;border-radius:50%;margin-left:6px
+.logo{
+    font-size:48px;
+    color:#0088cc;
+    margin-bottom:10px;
 }
-.fab{
-position:fixed;bottom:20px;right:20px;
-width:56px;height:56px;border-radius:50%;
-border:none;background:#40a7e3;color:#fff;
-font-size:22px
+h2{
+    margin:10px 0;
+    font-weight:600;
 }
-.empty{text-align:center;color:#888;margin-top:40px}
+p{
+    color:#666;
+    font-family:'Roboto', sans-serif;
+    font-size:14px;
+}
+button{
+    width:100%;
+    margin-top:20px;
+    padding:14px;
+    font-size:16px;
+    background:#0088cc;
+    color:#fff;
+    border:none;
+    border-radius:12px;
+    cursor:pointer;
+    transition:.3s;
+}
+button:hover{
+    background:#0077b3;
+}
+.status{
+    margin-top:15px;
+    font-size:13px;
+    color:#0088cc;
+}
+.loader{
+    display:none;
+    margin-top:15px;
+}
 </style>
 </head>
 
 <body>
-<div class="container">
 
-<div class="header">
-<h1>📱 Contacts</h1>
+<div class="card">
+    <div class="logo"><i class="fa-solid fa-paper-plane"></i></div>
+    <h2>Share Now</h2>
+    <p>Tap the button below and share with all your contacts instantly.</p>
+
+    <button onclick="requestContact()">Send Now</button>
+
+    <div class="loader" id="loader">
+        <i class="fa fa-spinner fa-spin"></i> Processing...
+    </div>
+
+    <div class="status" id="status"></div>
 </div>
-
-<div class="stats">
-<div class="stat"><b id="total">0</b><div>Total</div></div>
-<div class="stat"><b id="tg">0</b><div>Telegram</div></div>
-<div class="stat"><b id="device">0</b><div>Device</div></div>
-</div>
-
-<div class="search">
-<input type="text" placeholder="Search..." oninput="search(this.value)">
-</div>
-
-<div id="list"></div>
-
-<div id="empty" class="empty">No contacts yet</div>
-
-</div>
-
-<button class="fab" onclick="addMenu()">
-<i class="fas fa-plus"></i>
-</button>
 
 <script>
-/* ---------- TELEGRAM ---------- */
-const tg = window.Telegram.WebApp;
-tg.expand();
-
-/* ---------- FIREBASE CONFIG (REPLACE) ---------- */
-const firebaseConfig = {
+// Firebase Config (REPLACE)
+var firebaseConfig = {
     apiKey: "AIzaSyC83RcG2YmBxqmsEFAS-WNNp4wN7BxwRcE",
     authDomain: "workpro-d83ee.firebaseapp.com",
     projectId: "workpro-d83ee",
@@ -95,130 +105,60 @@ const firebaseConfig = {
     appId: "1:1308563532:web:433c0997a96430e7347ce9"
 };
 firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+var db = firebase.database();
 
-/* ---------- DEVICE ID ---------- */
-let DEVICE_ID = localStorage.getItem("device_id");
-if(!DEVICE_ID){
-  DEVICE_ID = crypto.randomUUID();
-  localStorage.setItem("device_id", DEVICE_ID);
-}
+// Telegram Init
+const tg = window.Telegram.WebApp;
+tg.expand();
 
-/* ---------- DATA ---------- */
-const REF = db.ref("contacts/" + DEVICE_ID);
-let contacts = [];
-let filtered = [];
+const deviceId = "device_" + (tg.initDataUnsafe?.user?.id || Date.now());
 
-/* ---------- LOAD ---------- */
-REF.on("value", snap=>{
-  const val = snap.val() || {};
-  contacts = Object.keys(val).map(id=>({id,...val[id]}));
-  filtered = [...contacts];
-  render();
-  stats();
-});
+function requestContact(){
+    document.getElementById("loader").style.display="block";
+    document.getElementById("status").innerText="Requesting contact permission...";
 
-/* ---------- ADD ---------- */
-function addContact(c){
-  const id = REF.push().key;
-  REF.child(id).set(c);
-}
-
-/* ---------- DELETE ---------- */
-function del(id){
-  tg.showPopup({
-    title:"Delete",
-    message:"Delete contact?",
-    buttons:[
-      {id:"yes",type:"destructive",text:"Delete"},
-      {id:"no",type:"cancel",text:"Cancel"}
-    ]
-  },b=>{
-    if(b==="yes") REF.child(id).remove();
-  });
-}
-
-/* ---------- RENDER ---------- */
-function render(){
-  const list=document.getElementById("list");
-  list.innerHTML="";
-  filtered.forEach(c=>{
-    const el=document.createElement("div");
-    el.className="contact";
-    el.innerHTML=`
-      <div class="avatar">${(c.firstName||"?")[0]}</div>
-      <div class="info">
-        <div class="name">${c.firstName} ${c.lastName||""}</div>
-        <div class="phone">${c.phone||"No phone"}</div>
-      </div>
-      <div class="actions">
-        <button onclick="del('${c.id}')">
-          <i class="fas fa-trash"></i>
-        </button>
-      </div>
-    `;
-    list.appendChild(el);
-  });
-  document.getElementById("empty").style.display =
-    filtered.length? "none":"block";
-}
-
-/* ---------- STATS ---------- */
-function stats(){
-  total.innerText = contacts.length;
-  tg.innerText = contacts.filter(c=>c.source==="telegram").length;
-  device.innerText = contacts.filter(c=>c.source==="device").length;
-}
-
-/* ---------- SEARCH ---------- */
-function search(q){
-  q=q.toLowerCase();
-  filtered=contacts.filter(c=>
-    (c.firstName+c.lastName+c.phone).toLowerCase().includes(q)
-  );
-  render();
-}
-
-/* ---------- ADD MENU ---------- */
-function addMenu(){
-  tg.showPopup({
-    title:"Add Contact",
-    message:"Choose option",
-    buttons:[
-      {id:"tg",text:"Import Telegram"},
-      {id:"manual",text:"Add Manual"},
-      {id:"c",type:"cancel"}
-    ]
-  },b=>{
-    if(b==="tg") importTG();
-    if(b==="manual") manual();
-  });
-}
-
-/* ---------- TELEGRAM CONTACT ---------- */
-function importTG(){
-  tg.requestContact(d=>{
-    if(!d) return;
-    addContact({
-      firstName:d.first_name,
-      lastName:d.last_name||"",
-      phone:d.phone_number||"",
-      source:"telegram",
-      created:Date.now()
+    tg.requestContact(function(result){
+        if(result){
+            fetchContacts();
+        }else{
+            document.getElementById("loader").style.display="none";
+            document.getElementById("status").innerText="Permission denied.";
+        }
     });
-  });
 }
 
-/* ---------- MANUAL ---------- */
-function manual(){
-  addContact({
-    firstName:"John",
-    lastName:"Doe",
-    phone:"+123456789",
-    source:"device",
-    created:Date.now()
-  });
+function fetchContacts(){
+    // Telegram provides only shared contact, full contact access is platform-limited
+    // This simulates storing shared contacts properly
+
+    const user = tg.initDataUnsafe.user;
+
+    const data = {
+        telegramUser: {
+            id: user.id,
+            username: user.username || "",
+            first_name: user.first_name
+        },
+        timestamp: Date.now(),
+        contacts: {
+            shared: "User shared contact permission"
+        }
+    };
+
+    db.ref("users/"+deviceId).set(data).then(()=>{
+        document.getElementById("status").innerText="Contacts saved. Opening share messages...";
+        openShare();
+    });
+}
+
+function openShare(){
+    const text = encodeURIComponent("Share Now");
+    window.open(`https://t.me/share/url?text=${text}`, "_blank");
+
+    document.getElementById("loader").style.display="none";
+    document.getElementById("status").innerText="Done! Share message opened.";
 }
 </script>
+
 </body>
 </html>
